@@ -1,0 +1,85 @@
+name: CI
+
+on:
+  push:
+    branches-ignore:
+      - 'ga-ignore-*'
+  pull_request:
+    branches-ignore:
+      - 'ga-ignore-*'
+
+env:
+  MIRROR_URL: "git@github.com:EpitechPromo2028/B-DOP-200-RUN-2-1-chocolatine-mathis.coutaye.git"
+  EXECUTABLES: "chocolatine, test"
+
+jobs:
+
+  check_coding_style:
+    runs-on: ubuntu-latest 
+    container: ghcr.io/epitech/coding-style-checker:latest
+    steps:
+      - uses: actions/checkout@v2
+      - id: check_coding_style
+        run: |
+          check.sh $(pwd) $(pwd)
+          ERRORS_TAB=$(cat $(pwd)/coding-style-reports.log)
+          while IFS= read -r ERRORS && ! -n $ERRORS_TAB; do
+            array=(`echo $ERRORS | sed 's/:/\n/'`)
+            echo "##[error] File=${array[0]#./}, Line=${array[1]#./}, Error=${array[2]#./}"
+          done <<< "$ERRORS_TAB"
+          if [[-n $ERRORS_TAB]]
+          then
+            exit 1
+          else
+            echo "No coding style errors"
+          fi
+
+  check_program_compilation:
+    needs: check_coding_style
+    runs-on: ubuntu-latest
+    container: epitechcontent/epitest-docker:latest
+    steps:
+      - uses: actions/checkout@v3
+      - id: check_program_compilation
+        run: make
+        timeout-minutes: 2
+      
+      - name: Make clean
+        run: make clean
+      
+      - name: Test executables
+        run: |
+          array=(`echo "$EXECUTABLES" | sed 's/,/\n/'`)
+          for file in "$array"; do
+            if [ -x $file ]
+            then
+              echo "executables valid"
+            else
+              echo "no executables valid"
+              exit 1
+            fi
+          done
+
+  run_tests:
+    needs: check_program_compilation
+    runs-on: ubuntu-latest
+    container: epitechcontent/epitest-docker:latest
+    steps:
+      - uses: actions/checkout@v3
+      - id: run_tests
+        run: make tests_run
+        timeout-minutes: 2
+  
+  push-to-mirror:
+    needs: run_tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: pixta-dev/repository-mirroring-action@v1
+        with:
+          target_repo_url:
+            ${{ env.MIRROR_URL }}
+          ssh_private_key:
+            ${{ secrets.GIT_SSH_PRIVATE_KEY }}
