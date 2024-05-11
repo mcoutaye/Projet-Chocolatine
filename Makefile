@@ -7,7 +7,7 @@
 
 CFLAGS	=	-W -Wall -Wextra -Werror -pedantic -L lib/my/ -lmy
 
-SRC = 	test.C
+SRC = 	test.c
 
 OBJ = 	$(SRC:.c=.o)
 
