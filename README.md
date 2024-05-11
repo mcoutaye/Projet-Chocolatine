@@ -6,4 +6,4 @@ Les étapes étaient :
     - Vérification du style de codage
     - Vérification que le programme compile
     - Lancement des tests unitaires
-    - Push dans un dépôt miroir
+    - Push dans un dépôt miroir (qui ne fonctionne pas car ce Repository n'est qu'une copie du vrai Repository)
